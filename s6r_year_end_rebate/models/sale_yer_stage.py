@@ -1,3 +1,6 @@
+# Copyright 2023 Scalizer (<https://www.scalizer.fr>)
+# License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html).
+
 import logging
 from datetime import date
 
@@ -26,9 +29,7 @@ class SaleYerStage(models.Model):
         comodel_name="sale.yer",
         string="YER Reference",
         required=True, ondelete='cascade', index=True)
-    currency_id = fields.Many2one(
-        string='Currency',
-        related='yer_id.currency_id')
+    currency_id = fields.Many2one(string='Currency', related='yer_id.currency_id')
 
     @api.depends('discount', 'amount_to_reach')
     def _compute_yer_stage_achieved(self):
@@ -45,7 +46,7 @@ class SaleYerStage(models.Model):
     def _compute_progression_stage(self):
         for this in self:
             this.progression_stage = ((this.amount_to_reach - this.amount_before_reach_next_stage) /
-                                        this.amount_to_reach) * 100.0 if this.amount_to_reach else 100.0
+                                      this.amount_to_reach) * 100.0 if this.amount_to_reach else 100.0
 
     @api.depends('amount_to_reach', 'yer_id.stage_ids')
     def compute_name(self):

@@ -1,21 +1,32 @@
-Scalizer sale order invoice status
+Scalizer Year End Rebate
 ===============
 
-This module adds year-end rebate
+This module adds year-end rebate functionality on sale Odoo module.
 
-<br>
-<br>
+## Table of contents
 
-#### Authors
+* [Installation](#installation)
+* [Usage](#usage)
+* [Contributors](#contributors)
+* [Maintainers](#maintainers)
+
+## Installation
+
+To install this module, you need to have OCA partner-contact repo on your project.
+
+## Usage
+
+Functionalities of this module is findable in Odoo Sale app into the Year-end Rebate tabs.
+
+## Authors
 
 * Morgane Goujon
 
-#### Contributors
+## Contributors
 
 * Scalizer
 
-#### Maintainers
-
+## Maintainers
 
 This module is maintained by [Scalizer](https://www.scalizer.fr).
 

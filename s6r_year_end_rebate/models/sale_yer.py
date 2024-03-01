@@ -5,7 +5,6 @@ from odoo import models, fields, _, api
 from odoo.exceptions import UserError
 from odoo.fields import Command
 
-
 _logger = logging.getLogger(__name__)
 
 
@@ -20,7 +19,8 @@ class SaleYer(models.Model):
         required=True, copy=False, readonly=True,
         index='trigram',
         states={'draft': [('readonly', False)]},
-        default=lambda self: _('New'))
+        default=lambda self: _('New')
+    )
     state = fields.Selection(selection=[
         ('draft', 'Draft'),
         ('confirmed', 'Confirmed'),
@@ -36,23 +36,12 @@ class SaleYer(models.Model):
         ('interest_group', 'Interest Group')],
         default='company',
     )
-    partner_id = fields.Many2one(
-        comodel_name="res.partner",
-        string="Partner",
-        domain="[('is_company', '=', True)]",
-    )
-    interest_group_id = fields.Many2one(
-        comodel_name="res.partner.interest.group",
-        string="Interest Group",
-    )
+    partner_id = fields.Many2one(comodel_name="res.partner", string="Partner", domain="[('is_company', '=', True)]")
+    interest_group_id = fields.Many2one(comodel_name="res.partner.interest.group", string="Interest Group")
     begin_date = fields.Date(string="Begin Date", copy=False)
     end_date = fields.Date(string="End Date", copy=False)
     invoiced_amount = fields.Float(string="Invoiced amount", compute="_compute_invoice_ids")
-    yer_amount = fields.Float(
-        string="Year-end rebate amount",
-        compute="_compute_yer_amount",
-        store=True
-    )
+    yer_amount = fields.Float(string="Year-end rebate amount", compute="_compute_yer_amount", store=True)
     stage_id_in_progress = fields.Many2one(
         comodel_name="sale.yer.stage",
         string="Stage in progress",
@@ -66,11 +55,7 @@ class SaleYer(models.Model):
         copy=True
     )
     stage_ids_count = fields.Integer(string="Stages count", compute="_compute_stage_ids_count", store=True)
-    discount_percentage = fields.Float(
-        string="Discount percentage",
-        compute="_compute_discount_percentage",
-        store=True
-    )
+    discount_percentage = fields.Float(string="Discount percentage", compute="_compute_discount_percentage", store=True)
     amount_before_next_stage = fields.Float(
         string="Amount before next stage",
         compute="_compute_amount_before_next_stage",
@@ -81,16 +66,8 @@ class SaleYer(models.Model):
         compute="_compute_yer_amount_next_stage"
     )
     user_id = fields.Many2one(string="Supervisor", comodel_name="res.users", compute="_compute_user_id", store=True)
-    order_ids = fields.Many2many(
-        comodel_name="sale.order",
-        string="Orders",
-        compute="_compute_order_ids",
-    )
-    invoice_ids = fields.Many2many(
-        comodel_name="account.move",
-        string="Invoices",
-        compute="_compute_invoice_ids",
-    )
+    order_ids = fields.Many2many(comodel_name="sale.order", string="Orders", compute="_compute_order_ids")
+    invoice_ids = fields.Many2many(comodel_name="account.move", string="Invoices", compute="_compute_invoice_ids")
     order_count = fields.Integer(string='Orders Count', compute="_compute_order_ids")
     invoice_count = fields.Integer(string='Invoices Count', compute="_compute_invoice_ids")
     move_id = fields.Many2one(comodel_name='account.move', string='Credit note', readonly=True)
@@ -98,7 +75,6 @@ class SaleYer(models.Model):
         'res.currency', 'Currency',
         default=lambda self: self.env.company.currency_id.id,
         required=True)
-
 
     @api.depends('stage_id_in_progress', 'stage_id_in_progress.amount_before_reach_next_stage')
     def _compute_yer_amount_next_stage(self):
@@ -150,8 +126,8 @@ class SaleYer(models.Model):
                 this.invoiced_amount = 0
                 continue
             domain = [('invoice_date', '>=', this.begin_date),
-                    ('invoice_date', '<=', this.end_date),
-                    ('state', '=', 'posted'),
+                      ('invoice_date', '<=', this.end_date),
+                      ('state', '=', 'posted'),
                       ('is_yer', '!=', True)]
             if this.domain == 'company':
                 domain.append(('partner_id.id', 'child_of', this.partner_id.id))
@@ -169,7 +145,7 @@ class SaleYer(models.Model):
         elif len(invoices) == 1:
             form_view = [(self.env.ref('account.view_move_form').id, 'form')]
             if 'views' in action:
-                action['views'] = form_view + [(state,view) for state,view in action['views'] if view != 'form']
+                action['views'] = form_view + [(state, view) for state, view in action['views'] if view != 'form']
             else:
                 action['views'] = form_view
             action['res_id'] = invoices.id
@@ -206,7 +182,7 @@ class SaleYer(models.Model):
     @api.depends('stage_ids', 'stage_ids.amount_to_reach', 'stage_ids.name')
     def _compute_stage_id_in_progress(self):
         for this in self:
-            stage = this.stage_ids.filtered(lambda stage: stage.progression_stage < 100)
+            stage = this.stage_ids.filtered(lambda s: s.progression_stage < 100)
             if stage:
                 this.stage_id_in_progress = stage.sorted('amount_to_reach')[0]
             elif this.stage_ids:
@@ -214,7 +190,7 @@ class SaleYer(models.Model):
 
     @api.depends('stage_id_in_progress', 'stage_id_in_progress.amount_before_reach_next_stage')
     def _compute_amount_before_next_stage(self):
-        for this in self.filtered(lambda l: l.stage_id_in_progress):
+        for this in self.filtered(lambda x: x.stage_id_in_progress):
             this.amount_before_next_stage = this.stage_id_in_progress.amount_before_reach_next_stage
 
     @api.model_create_multi
@@ -247,7 +223,7 @@ class SaleYer(models.Model):
 
     @api.depends('end_date')
     def _compute_state(self):
-        for this in self.filtered(lambda l: l.state == 'confirmed' and l.end_date < fields.Date.today()):
+        for this in self.filtered(lambda x: x.state == 'confirmed' and x.end_date < fields.Date.today()):
             this.state = 'done'
 
     @api.depends('partner_id')
@@ -258,7 +234,7 @@ class SaleYer(models.Model):
     @api.depends('stage_ids')
     def _compute_stage_ids_count(self):
         for this in self:
-             this.stage_ids_count = len(this.stage_ids)
+            this.stage_ids_count = len(this.stage_ids)
 
     @api.ondelete(at_uninstall=False)
     def _unlink_except_draft_or_cancel(self):
@@ -313,21 +289,21 @@ class SaleYer(models.Model):
                 return self.env['account.move']
         product_variant = self.env.ref('s6r_year_end_rebate.product_sale_yer').product_variant_id
         line_vals = Command.create({
-                'display_type': 'product',
-                'name':  product_variant.name,
-                'product_id': product_variant.id,
-                'quantity': 1,
-                'price_unit': self.yer_amount,
-                'tax_ids': [],
-                'sale_line_ids': [],
-                'is_downpayment': True,
-            })
+            'display_type': 'product',
+            'name': product_variant.name,
+            'product_id': product_variant.id,
+            'quantity': 1,
+            'price_unit': self.yer_amount,
+            'tax_ids': [],
+            'sale_line_ids': [],
+            'is_downpayment': True,
+        })
 
         invoice_vals = {
             'partner_id': self.partner_id.id,
             'invoice_line_ids': [line_vals],
             'is_yer': True,
         }
-        self.move_id = self.env['account.move'].sudo().with_context(default_move_type='out_refund').create([invoice_vals])
+        self.move_id = self.env['account.move'].sudo().with_context(default_move_type='out_refund').create(
+            [invoice_vals])
         return self.move_id
-

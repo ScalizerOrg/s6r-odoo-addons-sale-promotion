@@ -1,4 +1,8 @@
+# Copyright 2023 Scalizer (<https://www.scalizer.fr>)
+# License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html).
+
 from odoo import fields, models, _
+
 
 class ResPartner(models.Model):
     _inherit = "res.partner"
@@ -49,4 +53,3 @@ class ResPartner(models.Model):
                 this.yer_amount_in_progress = yer.yer_amount
             else:
                 this.yer_amount_in_progress = 0.0
-
