@@ -1,1 +1,1 @@
-# s6r-odoo-addons-sale-promotion-
+# s6r-odoo-addons-sale-promotion
