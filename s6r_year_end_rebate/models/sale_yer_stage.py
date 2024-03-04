@@ -40,13 +40,13 @@ class SaleYerStage(models.Model):
     def _compute_amount_before_reach_next_stage(self):
         for this in self:
             amount = this.amount_to_reach - this.yer_id.invoiced_amount
-            this.amount_before_reach_next_stage = amount if amount > 0.0 else 0.0
+            this.amount_before_reach_next_stage = amount if amount > 0 else 0
 
     @api.depends('amount_to_reach', 'amount_before_reach_next_stage')
     def _compute_progression_stage(self):
         for this in self:
             this.progression_stage = ((this.amount_to_reach - this.amount_before_reach_next_stage) /
-                                      this.amount_to_reach) * 100.0 if this.amount_to_reach else 100.0
+                                      this.amount_to_reach) * 100 if this.amount_to_reach else 100
 
     @api.depends('amount_to_reach', 'yer_id.stage_ids')
     def compute_name(self):

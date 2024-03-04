@@ -4,6 +4,7 @@ from datetime import date
 from odoo import models, fields, _, api
 from odoo.exceptions import UserError
 from odoo.fields import Command
+from odoo.osv import expression
 
 _logger = logging.getLogger(__name__)
 
@@ -16,10 +17,9 @@ class SaleYer(models.Model):
 
     name = fields.Char(
         string="YER Reference",
-        required=True, copy=False, readonly=True,
+        copy=False, readonly=True,
         index='trigram',
-        states={'draft': [('readonly', False)]},
-        default=lambda self: _('New')
+        states={'draft': [('readonly', False)]}
     )
     state = fields.Selection(selection=[
         ('draft', 'Draft'),
@@ -150,8 +150,7 @@ class SaleYer(models.Model):
                 action['views'] = form_view
             action['res_id'] = invoices.id
         else:
-            action = {'type': 'ir.actions.act_window_close'}
-            return action
+            return {'type': 'ir.actions.act_window_close'}
 
         ctx = self.env.context.copy()
         ctx['default_move_type'] = 'out_invoice'
@@ -196,7 +195,7 @@ class SaleYer(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            if vals.get('name', _("New")) == _("New"):
+            if not vals.get('name', False):
                 seq_date = fields.Datetime.context_timestamp(
                     self, fields.Datetime.now()
                 )
@@ -246,28 +245,33 @@ class SaleYer(models.Model):
     @api.constrains('domain', 'partner_id', 'interest_group_id', 'begin_date', 'end_date')
     def _check_partner_period_warning(self):
         """ Warn if partner or interest group already have a year-end rebate on this period"""
-        domain = [
-            '&', '|', '&',
+        domain_begin_date_in_period = [
             ('begin_date', '<=', self.begin_date),
             ('end_date', '>=', self.begin_date),
-            '|', '&',
+        ]
+        domain_end_date_in_period = [
             ('begin_date', '<=', self.end_date),
             ('end_date', '>=', self.end_date),
-            '|', '&',
+        ]
+        domain_begin_date = [
             ('begin_date', '>=', self.begin_date),
             ('begin_date', '<=', self.end_date),
-            '&',
+        ]
+        domain_end_date = [
             ('end_date', '>=', self.begin_date),
             ('end_date', '<=', self.end_date),
-            '&',
-            ('domain', '=', self.domain),
-            '&',
-            ('id', '!=', self.id),
         ]
+        domain = expression.OR([
+            domain_begin_date_in_period,
+            domain_end_date_in_period,
+            domain_begin_date,
+            domain_end_date
+        ])
+        domain.extend([('domain', '=', self.domain), ('id', '!=', self.id)])
         if self.domain == 'company':
-            domain += [('partner_id.id', '=', self.partner_id.id)]
+            domain.append(('partner_id.id', '=', self.partner_id.id))
         elif self.domain == 'interest_group':
-            domain += [('interest_group_id.id', '=', self.interest_group_id.id)]
+            domain.append(('interest_group_id.id', '=', self.interest_group_id.id))
         yer = self.env['sale.yer'].search(domain)
         if yer:
             raise UserError(_("A year-end rebate already exist for this partner/interest group on this period"))
@@ -304,6 +308,5 @@ class SaleYer(models.Model):
             'invoice_line_ids': [line_vals],
             'is_yer': True,
         }
-        self.move_id = self.env['account.move'].sudo().with_context(default_move_type='out_refund').create(
-            [invoice_vals])
+        self.move_id = self.env['account.move'].sudo().with_context(default_move_type='out_refund').create(invoice_vals)
         return self.move_id
