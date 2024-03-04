@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="action_sale_yer" model="ir.actions.act_window">
+        <field name="name">Year-end Rebate</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">sale.yer</field>
+        <field name="view_mode">tree,form,pivot,graph</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Define a new year-end rebate
+            </p>
+        </field>
+    </record>
+
+    <menuitem action="action_sale_yer" id="menu_action_sale_yer"
+              parent="sale.sale_menu_root" sequence="35"/>
+
+    <record id="view_yer_sale_tree" model="ir.ui.view">
+        <field name="name">sale.yer.tree</field>
+        <field name="model">sale.yer</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <tree string="Year-end rebate">
+                <field name="currency_id" invisible="1"/>
+                <field name="name"/>
+                <field name="partner_id" attrs="{'readonly': [('state', '!=', 'draft')]}"/>
+                <field name="interest_group_id" attrs="{'readonly': [('state', '!=', 'draft')]}"/>
+                <field name="begin_date" attrs="{'readonly': [('state', '!=', 'draft')]}"/>
+                <field name="end_date" attrs="{'readonly': [('state', '!=', 'draft')]}"/>
+                <field name="yer_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="invoiced_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="stage_id_in_progress"/>
+                <field name="discount_percentage" widget="percentage"/>
+                <field name="amount_before_next_stage" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="state" widget="badge"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_yer_sale_form" model="ir.ui.view">
+        <field name="name">sale.yer.form</field>
+        <field name="model">sale.yer</field>
+        <field name="arch" type="xml">
+            <form string="Year-end rebate" class="o_sale_order">
+            <header>
+                <button name="action_cancel" type="object" string="Cancel" attrs="{'invisible': [('state', 'not in', ['confirmed'])]}" data-hotkey="z"/>
+                <button name="action_draft" type="object" string="Set to Draft" attrs="{'invisible': [('state', 'not in', ['cancel', 'confirmed'])]}" data-hotkey="w"/>
+                <button name="action_confirm" id="action_confirm" data-hotkey="v"
+                    string="Confirm" class="btn-primary" type="object"
+                    attrs="{'invisible': [('state', 'not in', ['draft'])]}"/>
+                <button name="create_credit_note" string="Create Credit note" type="object" class="btn-primary" data-hotkey="q"
+                    attrs="{'invisible': ['|', ('state', '!=', 'done'), ('move_id', '!=', False)]}"/>
+                <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,done,cancel"/>
+            </header>
+            <sheet>
+                <div class="oe_button_box" name="button_box">
+                    <button name="action_view_invoice"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-pencil-square-o"
+                        attrs="{'invisible': [('invoice_count', '=', 0)]}">
+                        <field name="invoice_count" widget="statinfo" string="Invoices"/>
+                    </button>
+                    <button name="action_view_order"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-globe icon">
+                        <field name="order_count" widget="statinfo" string="Orders"/>
+                    </button>
+                </div>
+                <div class="oe_title">
+                    <h1>
+                        <field name="name" readonly="1"/>
+                    </h1>
+                </div>
+                <group name="yer_header">
+                    <field name="currency_id" invisible="1"/>
+                    <group>
+                        <field name="domain" widget="selection_badge" attrs="{'readonly': [('state', '!=', 'draft')]}"/>
+                        <field name="partner_id" attrs="{'invisible': [('domain', '!=', 'company')], 'readonly': [('state', '!=', 'draft')]}"/>
+                        <field name="interest_group_id" attrs="{'invisible': [('domain', '!=', 'interest_group')], 'readonly': [('state', '!=', 'draft')]}"/>
+                        <label for="begin_date" string="Period"/>
+                        <div>
+                            <div name="date_edit_only" class="o_row oe_edit_only">
+                                <field name="begin_date" class="oe_inline" attrs="{'readonly':[('state','!=','draft')]}"/>
+                                <i class="fa fa-long-arrow-right mx-2" aria-label="Arrow icon" title="Arrow"/>
+                                <field name="end_date" class="oe_inline" attrs="{'readonly':[('state','!=','draft')]}"/>
+                            </div>
+                            <div name="date_read_only" class="o_row oe_read_only">
+                                <span attrs="{'invisible': [('begin_date', '=', False)]}">From <field name="begin_date" class="oe_inline"/></span>
+                                <span attrs="{'invisible': [('end_date', '=', False)]}">To <field name="end_date" class="oe_inline"/></span>
+                            </div>
+                        </div>
+                        <field name="invoiced_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                        <field name="yer_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                    </group>
+                    <group>
+                        <field name="stage_id_in_progress"/>
+                        <field name="discount_percentage" widget="percentage"/>
+                        <field name="amount_before_next_stage" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                        <field name="yer_amount_next_stage" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                        <field name="user_id" widget="many2one_avatar_user" attrs="{'readonly': [('state', '!=', 'draft')]}"/>
+                        <field name="move_id" attrs="{'invisible': [('move_id', '=', False)]}"/>
+                    </group>
+                </group>
+                <notebook>
+                    <page string="Stages" name="stage_ids">
+                        <field
+                            name="stage_ids"
+                            widget="section_and_note_one2many"
+                            mode="tree"
+                            attrs="{'readonly': [('state', '!=', 'draft')]}"
+                        >
+                            <form>
+                                <field name="currency_id" invisible="1"/>
+                                <field name="name"/>
+                                <field name="amount_to_reach" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                <field name="discount" widget="percentage"/>
+                                <field name="progression_stage" widget="progressbar"/>
+                                <field name="amount_before_reach_next_stage" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                <field name="yer_stage_achieved" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            </form>
+                            <tree
+                                string="Stages"
+                                editable="bottom"
+                            >
+                                <field name="currency_id" invisible="1"/>
+                                <field name="name" optionnal="show"/>
+                                <field name="amount_to_reach" optionnal="show" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                <field name="discount" widget="percentage" optionnal="show"/>
+                                <field name="progression_stage" class="text-center" widget="progressbar" optionnal="show"/>
+                                <field name="amount_before_reach_next_stage" optionnal="show" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                <field name="yer_stage_achieved" optionnal="show" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            </tree>
+                        </field>
+                    </page>
+                </notebook>
+            </sheet>
+            <div class="oe_chatter">
+                <field name="message_follower_ids"/>
+                <field name="activity_ids"/>
+                <field name="message_ids"/>
+            </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_sales_yer_filter" model="ir.ui.view">
+        <field name="name">sale.yer.list.select</field>
+        <field name="model">sale.yer</field>
+        <field name="priority" eval="15"/>
+        <field name="arch" type="xml">
+            <search string="Search Sales YER">
+                <field name="name" string="Year-end rebate"
+                    filter_domain="['|', ('name', 'ilike', self), ('partner_id', 'child_of', self)]"/>
+                <field name="partner_id" operator="child_of"/>
+                <field name="interest_group_id" operator="child_of"/>
+                <field name="user_id"/>
+                <filter string="Partners" name="partner" domain="[('domain', '=', 'company')]"/>
+                <filter string="Interest group" name="interest_group" domain="[('domain','=', 'interest_group')]"/>
+                <filter name="begin_date" string="Start Date" date="begin_date"/>
+                <filter name="end_date" string="End Date" date="end_date"/>
+                <group expand="0" string="Group By">
+                    <filter string="Domain" name="domain" domain="[]" context="{'group_by': 'domain'}"/>
+                    <filter name="Partner" string="partner" domain="[]" context="{'group_by': 'partner_id'}"/>
+                    <filter name="Interest Group" string="interest_group" domain="[]" context="{'group_by': 'interest_group_id'}"/>
+                    <filter string="State" name="state" domain="[]" context="{'group_by': 'state'}"/>
+                    <filter string="Number of stages" name="stage_ids_count" domain="[]" context="{'group_by': 'stage_ids_count'}"/>
+                    <filter string="Supervisor" name="supervisor" domain="[]" context="{'group_by': 'user_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+</odoo>

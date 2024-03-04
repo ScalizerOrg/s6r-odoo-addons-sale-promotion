@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_partner_form" model="ir.ui.view">
+        <field name="name">res.partner.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/div[@name='button_box']" position="inside">
+                <button name="action_view_yer"
+                    type="object"
+                    class="oe_stat_button"
+                    icon="fa-pencil-square-o"
+                    attrs="{'invisible': [('yer_count', '=', 0)]}">
+                    <field name="yer_count" widget="statinfo" string="YER"/>
+                </button>
+            </xpath>
+            <group name="sale" position="inside">
+                <field name="yer_amount_in_progress" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+            </group>
+        </field>
+    </record>
+</odoo>
